@@ -169,6 +169,8 @@ abstract class Controls_Stack extends Base_Object {
 	 */
 	private $render_attributes = [];
 
+	protected $default = [];
+
 	/**
 	 * Get element name.
 	 *
@@ -743,10 +745,11 @@ abstract class Controls_Stack extends Base_Object {
 
 		$style_controls = [];
 
-		foreach ( $controls as $control_name => $control ) {
-			$control_obj = Plugin::$instance->controls_manager->get_control( $control['type'] );
+		$default = $this->get_control_objects( $controls );
 
-			if ( ! $control_obj instanceof Base_Data_Control ) {
+		foreach ( $controls as $control_name => $control ) {
+
+			if ( ! $default[ $control['type'] ] instanceof Base_Data_Control ) {
 				continue;
 			}
 
@@ -1148,7 +1151,7 @@ abstract class Controls_Stack extends Base_Object {
 
 		$active_settings = [];
 
-		$controls_objs = Plugin::$instance->controls_manager->get_controls();
+		$default = $this->get_control_objects($controls);
 
 		foreach ( $settings as $setting_key => $setting ) {
 			if ( ! isset( $controls[ $setting_key ] ) ) {
@@ -1160,9 +1163,7 @@ abstract class Controls_Stack extends Base_Object {
 			$control = $controls[ $setting_key ];
 
 			if ( $this->is_control_visible( $control, $settings, $controls ) ) {
-				$control_obj = $controls_objs[ $control['type'] ] ?? null;
-
-				if ( $control_obj instanceof Control_Repeater ) {
+				if ( $default[ $control['type'] ] instanceof Control_Repeater ) {
 					foreach ( $setting as & $item ) {
 						$item = $this->get_active_settings( $item, $control['fields'] );
 					}
@@ -1229,17 +1230,16 @@ abstract class Controls_Stack extends Base_Object {
 			$controls = $this->get_controls();
 		}
 
-		$controls_objs = Plugin::$instance->controls_manager->get_controls();
+		$default = $this->get_control_objects( $controls );
 
 		foreach ( $controls as $control ) {
 			$control_name = $control['name'];
-			$control_obj = $controls_objs[ $control['type'] ] ?? null;
 
-			if ( ! $control_obj instanceof Base_Data_Control ) {
+			if ( ! isset( $default[ $control['type'] ] ) || ! $default[$control['type']] instanceof Base_Data_Control ) {
 				continue;
 			}
 
-			if ( $control_obj instanceof Control_Repeater ) {
+			if ( $default[ $control['type'] ] instanceof Control_Repeater ) {
 				if ( ! isset( $settings[ $control_name ] ) ) {
 					continue;
 				}
@@ -1251,7 +1251,7 @@ abstract class Controls_Stack extends Base_Object {
 				continue;
 			}
 
-			$dynamic_settings = $control_obj->get_settings( 'dynamic' );
+			$dynamic_settings = $default[ $control['type'] ]->get_settings( 'dynamic' );
 
 			if ( ! $dynamic_settings ) {
 				$dynamic_settings = [];
@@ -1383,7 +1383,7 @@ abstract class Controls_Stack extends Base_Object {
 			return true;
 		}
 
-		if ( ! $controls ) {
+		if ( is_null( $controls ) ) {
 			$controls = $this->get_controls();
 		}
 
@@ -2150,25 +2150,29 @@ abstract class Controls_Stack extends Base_Object {
 		];
 	}
 
+	protected function get_control_objects(array $controls) {
+		return Control_Objects::instance()->get_control_objects($controls);
+	}
+
 	/**
 	 * @since 2.3.0
 	 * @access protected
 	 */
 	protected function get_init_settings() {
 		$settings = $this->get_data( 'settings' );
+		$controls = $this->get_controls();
+		$default = $this->get_control_objects( $controls );
 
-		$controls_objs = Plugin::$instance->controls_manager->get_controls();
-
-		foreach ( $this->get_controls() as $control ) {
-			$control_obj = $controls_objs[ $control['type'] ] ?? null;
-
-			if ( ! $control_obj instanceof Base_Data_Control ) {
+		foreach ($controls as $control) {
+			if ( ! isset( $default[ $control['type'] ] ) ) {
 				continue;
 			}
 
-			$control = array_merge_recursive( $control_obj->get_settings(), $control );
+			if ( ! isset( $control['default'] ) ) {
+				$control['default'] = $default[ $control['type'] ]['default'];
+			}
 
-			$settings[ $control['name'] ] = $control_obj->get_value( $control, $settings );
+			$settings[ $control['name'] ] = $default[ $control['type'] ]->get_value( $control, $settings );
 		}
 
 		return $settings;
@@ -2413,10 +2417,10 @@ abstract class Controls_Stack extends Base_Object {
 			$controls = $this->get_controls();
 		}
 
-		foreach ( $controls as $control ) {
-			$control_obj = Plugin::$instance->controls_manager->get_control( $control['type'] );
+		$default = $this->get_control_objects($controls);
 
-			if ( $control_obj instanceof Control_Repeater ) {
+		foreach ( $controls as $control ) {
+			if ( $default[ $control['type'] ] instanceof Control_Repeater ) {
 				if ( empty( $settings[ $control['name'] ] ) ) {
 					continue;
 				}

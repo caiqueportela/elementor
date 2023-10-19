@@ -625,9 +625,11 @@ class Controls_Manager {
 	 * @return bool|Base_Control Control instance, or False otherwise.
 	 */
 	public function get_control( $control_id ) {
-		$controls = $this->get_controls();
+		if (!isset($this->controls)) {
+			$this->controls = $this->get_controls();
+		}
 
-		return isset( $controls[ $control_id ] ) ? $controls[ $control_id ] : false;
+		return $this->controls[ $control_id ] ?? false;
 	}
 
 	/**
