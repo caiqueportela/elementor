@@ -554,8 +554,8 @@ abstract class Controls_Stack extends Base_Object {
 		$position = array_merge( $default_position, $position );
 
 		if (
-			'control' === $position['type'] && in_array( $position['at'], [ 'start', 'end' ], true ) ||
-			'section' === $position['type'] && in_array( $position['at'], [ 'before', 'after' ], true )
+			('control' === $position['type'] && in_array($position['at'], ['start', 'end'], true)) ||
+            ('section' === $position['type'] && in_array($position['at'], ['before', 'after'], true))
 		) {
 			_doing_it_wrong( sprintf( '%s::%s', get_called_class(), __FUNCTION__ ), 'Invalid position arguments. Use `before` / `after` for control or `start` / `end` for section.', '1.7.0' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
@@ -1266,7 +1266,7 @@ abstract class Controls_Stack extends Base_Object {
 			}
 
 			if ( ! empty( $dynamic_settings['active'] ) && ! empty( $all_settings[ Manager::DYNAMIC_SETTING_KEY ][ $control_name ] ) ) {
-				$parsed_value = $control_obj->parse_tags( $all_settings[ Manager::DYNAMIC_SETTING_KEY ][ $control_name ], $dynamic_settings );
+				$parsed_value = $default[ $control['type'] ]->parse_tags( $all_settings[ Manager::DYNAMIC_SETTING_KEY ][ $control_name ], $dynamic_settings );
 
 				$dynamic_property = ! empty( $dynamic_settings['property'] ) ? $dynamic_settings['property'] : null;
 
@@ -1457,7 +1457,7 @@ abstract class Controls_Stack extends Base_Object {
 				$is_contains = $instance_value === $condition_value;
 			}
 
-			if ( $is_negative_condition && $is_contains || ! $is_negative_condition && ! $is_contains ) {
+			if ( ($is_negative_condition && $is_contains) || (!$is_negative_condition && !$is_contains)) {
 				return false;
 			}
 		}
@@ -2420,7 +2420,7 @@ abstract class Controls_Stack extends Base_Object {
 		$default = $this->get_control_objects($controls);
 
 		foreach ( $controls as $control ) {
-			if ( $default[ $control['type'] ] instanceof Control_Repeater ) {
+			if ( isset( $default[ $control['type'] ] ) && $default[ $control['type'] ] instanceof Control_Repeater ) {
 				if ( empty( $settings[ $control['name'] ] ) ) {
 					continue;
 				}
